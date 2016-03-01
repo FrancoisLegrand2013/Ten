@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<declare-styleable name="GameView">
+		<attr name="row" format="integer"/>
+		<attr name="column" format="integer"/>
+		<attr name="tileColor1" format="color"/>
+		<attr name="tileColor2" format="color"/>
+	</declare-styleable>
+</resources>
