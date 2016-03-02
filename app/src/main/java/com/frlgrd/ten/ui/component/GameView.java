@@ -23,7 +23,6 @@ public class GameView extends FrameLayout {
 	private int tileSize;
 	private Rect baseTileRect;
 	private Paint basePaint;
-	private boolean baseDrawn = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -77,36 +76,33 @@ public class GameView extends FrameLayout {
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		if (!baseDrawn) {
-			int maxHeight = getMeasuredHeight() / row;
-			int maxWidth = getMeasuredWidth() / column;
-			if (maxHeight < maxWidth) {
-				tileSize = maxHeight;
-			} else {
-				tileSize = maxWidth;
-			}
+		int maxHeight = getMeasuredHeight() / row;
+		int maxWidth = getMeasuredWidth() / column;
+		if (maxHeight < maxWidth) {
+			tileSize = maxHeight;
+		} else {
+			tileSize = maxWidth;
 		}
 	}
 
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		if (!baseDrawn) {
-			int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
-			int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
-			for (int x = 0; x < column; x++) {
-				for (int y = 0; y < row; y++) {
-					baseTileRect.set(
-							x * tileSize + horizontalOffset,
-							y * tileSize + verticalOffset,
-							(x + 1) * tileSize + horizontalOffset,
-							(y + 1) * tileSize + verticalOffset
-					);
-					basePaint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
-					canvas.drawRect(baseTileRect, basePaint);
-				}
+
+		// draw game board
+		int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
+		int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				baseTileRect.set(
+						x * tileSize + horizontalOffset,
+						y * tileSize + verticalOffset,
+						(x + 1) * tileSize + horizontalOffset,
+						(y + 1) * tileSize + verticalOffset
+				);
+				basePaint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
+				canvas.drawRect(baseTileRect, basePaint);
 			}
-			baseDrawn = true;
 		}
 	}
 }
