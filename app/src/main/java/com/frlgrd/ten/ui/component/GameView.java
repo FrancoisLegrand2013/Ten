@@ -10,8 +10,10 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
+import android.widget.RelativeLayout;
 
 import com.frlgrd.ten.R;
+import com.frlgrd.ten.core.Tile;
 
 public class GameView extends FrameLayout {
 
@@ -23,6 +25,10 @@ public class GameView extends FrameLayout {
 	private int tileSize;
 	private Rect baseTileRect;
 	private Paint basePaint;
+
+	private Tile[][] tiles;
+
+	private boolean viewSizeInitialized = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -83,6 +89,14 @@ public class GameView extends FrameLayout {
 		} else {
 			tileSize = maxWidth;
 		}
+		if (!viewSizeInitialized) {
+			initViewSize();
+		}
+	}
+
+	private void initViewSize() {
+		setLayoutParams(new RelativeLayout.LayoutParams(column * tileSize, row * tileSize));
+		viewSizeInitialized = true;
 	}
 
 	@Override
@@ -104,5 +118,18 @@ public class GameView extends FrameLayout {
 				canvas.drawRect(baseTileRect, basePaint);
 			}
 		}
+		if (tiles != null) {
+			for (int x = 0; x < column; x++) {
+				for (int y = 0; y < row; y++) {
+
+					canvas.drawRect(baseTileRect, basePaint);
+				}
+			}
+		}
+	}
+
+	public void prepare(Tile[][] tiles) {
+		this.tiles = tiles;
+		invalidate();
 	}
 }
