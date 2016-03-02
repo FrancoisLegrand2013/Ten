@@ -1,4 +1,4 @@
-package com.frlgrd.ten.core;
+package com.frlgrd.ten.core.model;
 
 import android.content.Context;
 import android.graphics.Color;

@@ -3,6 +3,8 @@ package com.frlgrd.ten.core;
 import android.graphics.Rect;
 import android.support.annotation.NonNull;
 
+import com.frlgrd.ten.core.model.Tile;
+
 import java.util.Random;
 
 public class LevelGenerator {
