@@ -11,18 +11,21 @@ import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import com.frlgrd.ten.R;
 import com.frlgrd.ten.core.Level;
 import com.frlgrd.ten.core.LevelGenerator;
-import com.frlgrd.ten.core.Tile;
+import com.frlgrd.ten.core.Logger;
+import com.frlgrd.ten.core.model.Tile;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public class GameView extends FrameLayout {
+public class GameView extends FrameLayout implements GestureDetector.OnGestureListener {
 
 	private static final int START = 0;
 	private static final int GAME_PREPARED = 1;
@@ -43,6 +46,8 @@ public class GameView extends FrameLayout {
 	private Rect[][] tilesPositions;
 
 	private boolean viewSizeInitialized = false;
+
+	private GestureDetector gestureDetector;
 
 	public GameView(Context context) {
 		super(context);
@@ -77,6 +82,14 @@ public class GameView extends FrameLayout {
 		paint.setStyle(Paint.Style.FILL);
 		textPaint = new Paint();
 		textPaint.setAntiAlias(true);
+
+		gestureDetector = new GestureDetector(getContext(), this);
+	}
+
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		gestureDetector.onTouchEvent(event);
+		return true;
 	}
 
 	@Override
@@ -165,9 +178,41 @@ public class GameView extends FrameLayout {
 		invalidate();
 	}
 
+	@Override
+	public boolean onDown(MotionEvent e) {
+		Logger.info("onDown");
+		return false;
+	}
+
+	@Override
+	public void onShowPress(MotionEvent e) {
+
+	}
+
+	@Override
+	public boolean onSingleTapUp(MotionEvent e) {
+		return false;
+	}
+
+	@Override
+	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+		Logger.info("onScroll");
+		return false;
+	}
+
+	@Override
+	public void onLongPress(MotionEvent e) {
+
+	}
+
+	@Override
+	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+		Logger.info("onFling");
+		return false;
+	}
+
 	@IntDef({START, GAME_PREPARED})
 	@Retention(RetentionPolicy.SOURCE)
 	private @interface GameState {
-
 	}
 }
