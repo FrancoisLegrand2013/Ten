@@ -2,7 +2,7 @@ package com.frlgrd.ten.core.model;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.Rect;
+import android.graphics.RectF;
 
 import com.frlgrd.ten.R;
 
@@ -10,7 +10,7 @@ import java.util.Random;
 
 public class Tile {
 
-	private Rect position;
+	private RectF position;
 	private int value;
 
 	public static int getTilesColor(Context context, int value) {
@@ -34,11 +34,11 @@ public class Tile {
 		}
 	}
 
-	public Rect getPosition() {
+	public RectF getPosition() {
 		return position;
 	}
 
-	public void setPosition(Rect position) {
+	public void setPosition(RectF position) {
 		this.position = position;
 	}
 

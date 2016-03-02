@@ -1,6 +1,6 @@
 package com.frlgrd.ten.core;
 
-import android.graphics.Rect;
+import android.graphics.RectF;
 import android.support.annotation.NonNull;
 
 import com.frlgrd.ten.core.model.Tile;
@@ -9,7 +9,7 @@ import java.util.Random;
 
 public class LevelGenerator {
 
-	public static Tile[][] generateRandom(Rect[][] rects, @NonNull Level level) {
+	public static Tile[][] generateRandom(RectF[][] rects, @NonNull Level level) {
 		Tile[][] tiles = new Tile[level.getColumn()][level.getRow()];
 		Random random = new Random();
 		for (int x = 0; x < level.getColumn(); x++) {
@@ -44,7 +44,7 @@ public class LevelGenerator {
 		return tiles;
 	}
 
-	public static Tile[][] generate(Rect[][] rects, @NonNull Level level) {
+	public static Tile[][] generate(RectF[][] rects, @NonNull Level level) {
 		Tile[][] tiles = new Tile[level.getColumn()][level.getRow()];
 		for (int x = 0; x < level.getColumn(); x++) {
 			for (int y = 0; y < level.getRow(); y++) {

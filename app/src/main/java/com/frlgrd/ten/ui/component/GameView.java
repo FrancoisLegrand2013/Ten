@@ -6,7 +6,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
+import android.graphics.RectF;
 import android.os.Build;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
@@ -29,6 +29,14 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	private static final int START = 0;
 	private static final int GAME_PREPARED = 1;
+	private static final int WAITING = 2;
+	private static final int DRAGGING = 3;
+
+	private static final int HORIZONTAL = 0;
+	private static final int VERTICAL = 1;
+
+	@OrientationMode
+	private int draggingOrientation;
 	@GameState
 	private int gameSate = START;
 
@@ -38,16 +46,17 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private int tileColor2 = 0;
 
 	private int tileSize;
-	private Rect baseTileRect;
+	private RectF baseTileRect;
 	private Paint paint;
 	private Paint textPaint;
 
 	private Tile[][] tiles;
-	private Rect[][] tilesPositions;
+	private RectF[][] tilesPositions;
 
 	private boolean viewSizeInitialized = false;
 
 	private GestureDetector gestureDetector;
+	private RectF pointer;
 
 	public GameView(Context context) {
 		super(context);
@@ -77,7 +86,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		tileColor2 = array.getInteger(R.styleable.GameView_tileColor2, Color.DKGRAY);
 		array.recycle();
 
-		baseTileRect = new Rect();
+		baseTileRect = new RectF();
 		paint = new Paint();
 		paint.setStyle(Paint.Style.FILL);
 		textPaint = new Paint();
@@ -88,6 +97,10 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+		if (event.getAction() == MotionEvent.ACTION_UP) {
+			gameSate = WAITING;
+			pointer = null;
+		}
 		gestureDetector.onTouchEvent(event);
 		return true;
 	}
@@ -118,11 +131,9 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		switch (gameSate) {
-			case GAME_PREPARED:
-				drawBoard(canvas);
-				drawTilesAtLaunch(canvas);
-				break;
+		if (gameSate >= GAME_PREPARED) {
+			drawBoard(canvas);
+			drawTilesAtLaunch(canvas);
 		}
 	}
 
@@ -162,10 +173,10 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	public void start(@NonNull Level level) {
 		column = level.getColumn();
 		row = level.getRow();
-		tilesPositions = new Rect[column][row];
+		tilesPositions = new RectF[column][row];
 		for (int x = 0; x < column; x++) {
 			for (int y = 0; y < row; y++) {
-				tilesPositions[x][y] = new Rect();
+				tilesPositions[x][y] = new RectF();
 			}
 		}
 		if (level instanceof LevelGenerator.RandomLevel) {
@@ -180,7 +191,6 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onDown(MotionEvent e) {
-		Logger.info("onDown");
 		return false;
 	}
 
@@ -196,8 +206,21 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		Logger.info("onScroll");
-		return false;
+		if (gameSate != DRAGGING) {
+			draggingOrientation = Math.abs(distanceX) > Math.abs(distanceY) ? HORIZONTAL : VERTICAL;
+		}
+		if (pointer == null) {
+			pointer = new RectF();
+		}
+		if (draggingOrientation == HORIZONTAL) {
+			pointer.set(e2.getX(), 0, e2.getX(), 0);
+		} else {
+			pointer.set(0, e2.getY(), 0, e2.getY());
+		}
+		Logger.info("pointer = " + pointer);
+		gameSate = DRAGGING;
+		invalidate();
+		return true;
 	}
 
 	@Override
@@ -207,12 +230,16 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-		Logger.info("onFling");
 		return false;
 	}
 
-	@IntDef({START, GAME_PREPARED})
+	@IntDef({START, GAME_PREPARED, WAITING, DRAGGING})
 	@Retention(RetentionPolicy.SOURCE)
 	private @interface GameState {
+	}
+
+	@IntDef({HORIZONTAL, VERTICAL})
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface OrientationMode {
 	}
 }
