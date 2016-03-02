@@ -8,14 +8,26 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Build;
+import android.support.annotation.IntDef;
+import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import com.frlgrd.ten.R;
+import com.frlgrd.ten.core.Level;
+import com.frlgrd.ten.core.LevelGenerator;
 import com.frlgrd.ten.core.Tile;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 public class GameView extends FrameLayout {
+
+	private static final int START = 0;
+	private static final int GAME_PREPARED = 1;
+	@GameState
+	private int gameSate = START;
 
 	private int row = 0;
 	private int column = 0;
@@ -24,9 +36,11 @@ public class GameView extends FrameLayout {
 
 	private int tileSize;
 	private Rect baseTileRect;
-	private Paint basePaint;
+	private Paint paint;
+	private Paint textPaint;
 
 	private Tile[][] tiles;
+	private Rect[][] tilesPositions;
 
 	private boolean viewSizeInitialized = false;
 
@@ -53,44 +67,33 @@ public class GameView extends FrameLayout {
 
 	private void init(Context context, AttributeSet attributeSet) {
 
-		int defaultSize = 5;
 		TypedArray array = context.obtainStyledAttributes(attributeSet, R.styleable.GameView);
-		column = array.getInteger(R.styleable.GameView_column, defaultSize);
-		row = array.getInteger(R.styleable.GameView_row, defaultSize);
 		tileColor1 = array.getInteger(R.styleable.GameView_tileColor1, Color.BLACK);
 		tileColor2 = array.getInteger(R.styleable.GameView_tileColor2, Color.DKGRAY);
 		array.recycle();
 
-		int maxSize = 20;
-		int minSize = 2;
-		if (column < minSize) {
-			column = minSize;
-		} else if (column > maxSize) {
-			column = maxSize;
-		}
-		if (row < minSize) {
-			row = minSize;
-		} else if (row > maxSize) {
-			row = maxSize;
-		}
-
 		baseTileRect = new Rect();
-		basePaint = new Paint();
-		basePaint.setStyle(Paint.Style.FILL);
+		paint = new Paint();
+		paint.setStyle(Paint.Style.FILL);
+		textPaint = new Paint();
+		textPaint.setAntiAlias(true);
 	}
 
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		int maxHeight = getMeasuredHeight() / row;
-		int maxWidth = getMeasuredWidth() / column;
-		if (maxHeight < maxWidth) {
-			tileSize = maxHeight;
-		} else {
-			tileSize = maxWidth;
-		}
-		if (!viewSizeInitialized) {
-			initViewSize();
+		if (gameSate == GAME_PREPARED) {
+			int maxHeight = getMeasuredHeight() / row;
+			int maxWidth = getMeasuredWidth() / column;
+			if (maxHeight < maxWidth) {
+				tileSize = maxHeight;
+			} else {
+				tileSize = maxWidth;
+			}
+			textPaint.setTextSize(tileSize * .5F);
+			if (!viewSizeInitialized) {
+				initViewSize();
+			}
 		}
 	}
 
@@ -102,34 +105,69 @@ public class GameView extends FrameLayout {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
+		switch (gameSate) {
+			case GAME_PREPARED:
+				drawBoard(canvas);
+				drawTilesAtLaunch(canvas);
+				break;
+		}
+	}
 
-		// draw game board
-		int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
-		int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
+	private void drawTilesAtLaunch(Canvas canvas) {
 		for (int x = 0; x < column; x++) {
 			for (int y = 0; y < row; y++) {
-				baseTileRect.set(
-						x * tileSize + horizontalOffset,
-						y * tileSize + verticalOffset,
-						(x + 1) * tileSize + horizontalOffset,
-						(y + 1) * tileSize + verticalOffset
-				);
-				basePaint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
-				canvas.drawRect(baseTileRect, basePaint);
-			}
-		}
-		if (tiles != null) {
-			for (int x = 0; x < column; x++) {
-				for (int y = 0; y < row; y++) {
-
-					canvas.drawRect(baseTileRect, basePaint);
+				Tile tile = tiles[x][y];
+				if (tile != null) {
+					tile.setPosition(tilesPositions[x][y]);
+					paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
+					textPaint.setColor(Tile.getValueColor(tile.getValue()));
+					canvas.drawRect(tilesPositions[x][y], paint);
+					float horizontalMarginFactor = (tile.getValue() > 9 || tile.getValue() < 0) ? .2F : .33F;
+					canvas.drawText(String.valueOf(tile.getValue()), tile.getPosition().left + (tileSize * horizontalMarginFactor), tile.getPosition().top + tileSize * .66F, textPaint);
 				}
 			}
 		}
 	}
 
-	public void prepare(Tile[][] tiles) {
-		this.tiles = tiles;
+	private void drawBoard(Canvas canvas) {
+		int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
+		int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				int left = x * tileSize + horizontalOffset;
+				int top = y * tileSize + verticalOffset;
+				int right = (x + 1) * tileSize + horizontalOffset;
+				int bottom = (y + 1) * tileSize + verticalOffset;
+				baseTileRect.set(left, top, right, bottom);
+				paint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
+				canvas.drawRect(baseTileRect, paint);
+				tilesPositions[x][y].set(left, top, right, bottom);
+			}
+		}
+	}
+
+	public void start(@NonNull Level level) {
+		column = level.getColumn();
+		row = level.getRow();
+		tilesPositions = new Rect[column][row];
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				tilesPositions[x][y] = new Rect();
+			}
+		}
+		if (level instanceof LevelGenerator.RandomLevel) {
+			tiles = LevelGenerator.generateRandom(tilesPositions, level);
+		} else {
+			tiles = LevelGenerator.generate(tilesPositions, level);
+		}
+
+		gameSate = GAME_PREPARED;
 		invalidate();
+	}
+
+	@IntDef({START, GAME_PREPARED})
+	@Retention(RetentionPolicy.SOURCE)
+	private @interface GameState {
+
 	}
 }
