@@ -24,6 +24,7 @@ import com.frlgrd.ten.core.model.Tile;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Arrays;
 
 public class GameView extends FrameLayout implements GestureDetector.OnGestureListener {
 
@@ -67,6 +68,9 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private GestureDetector gestureDetector;
 	private RectF pointer;
 	private float dragX = 0, dragY = 0;
+
+	private float leftBound = 0, topBound = 0, rightBound = 0, bottomBound = 0;
+	private boolean boundsCalculated = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -118,6 +122,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			}
 			gameSate = WAITING;
 			draggingOrientation = NONE;
+			boundsCalculated = false;
 			pointer = null;
 			draggingTile = null;
 		}
@@ -200,6 +205,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 					if (pointer != null) {
 						if (pointer.intersect(tile.getPosition()) && gameSate == WAITING && tile.canBeDragged()) {
 							draggingTile = tile;
+							calculateDraggingTileBounds(x, y);
 							gameSate = DRAGGING;
 						}
 					}
@@ -222,11 +228,41 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
-	private boolean isStillInGameBoard() {
-		return draggingTile.getPosition().left > tilesPositions[0][0].left
-				&& draggingTile.getPosition().right < tilesPositions[column - 1][0].right
-				&& draggingTile.getPosition().top > tilesPositions[0][0].top
-				&& draggingTile.getPosition().bottom < tilesPositions[0][row - 1].bottom;
+	private void calculateDraggingTileBounds(int tileXIndex, int tileYIndex) {
+		Tile[] horizontalTile = new Tile[column];
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				if (tileYIndex == y) {
+					horizontalTile[x] = tiles[x][y];
+				}
+			}
+		}
+
+		leftBound = getAvailablePosition(Arrays.copyOfRange(horizontalTile, 0, tileXIndex), false) * tileSize;
+		topBound = getAvailablePosition(Arrays.copyOfRange(tiles[tileXIndex], 0, tileYIndex), false) * tileSize;
+		rightBound = getAvailablePosition(Arrays.copyOfRange(horizontalTile, tileXIndex + 1, column), true) * tileSize;
+		bottomBound = getAvailablePosition(Arrays.copyOfRange(tiles[tileXIndex], tileYIndex + 1, row), true) * tileSize;
+		boundsCalculated = true;
+	}
+
+	private int getAvailablePosition(Tile[] neighbour, boolean ascendant) {
+		int distanceFactor = neighbour.length;
+		if (ascendant) {
+			for (int i = 0; i < neighbour.length; i++) {
+				if (neighbour[i] != null && neighbour[i].canBeDragged()) {
+					distanceFactor = i;
+					break;
+				}
+			}
+		} else {
+			for (int i = neighbour.length - 1; i >= 0; i--) {
+				if (neighbour[i] != null && neighbour[i].canBeDragged()) {
+					distanceFactor = i - neighbour.length + 1;
+					break;
+				}
+			}
+		}
+		return Math.abs(distanceFactor);
 	}
 
 	private void drawTile(Canvas canvas, Tile tile) {
