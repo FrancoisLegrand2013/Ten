@@ -19,7 +19,6 @@ import android.widget.RelativeLayout;
 import com.frlgrd.ten.R;
 import com.frlgrd.ten.core.Level;
 import com.frlgrd.ten.core.LevelGenerator;
-import com.frlgrd.ten.core.Logger;
 import com.frlgrd.ten.core.model.Tile;
 
 import java.lang.annotation.Retention;
@@ -32,6 +31,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private static final int WAITING = 2;
 	private static final int DRAGGING = 3;
 
+	private static final int NONE = -1;
 	private static final int HORIZONTAL = 0;
 	private static final int VERTICAL = 1;
 
@@ -52,11 +52,13 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	private Tile[][] tiles;
 	private RectF[][] tilesPositions;
+	private Tile draggingTile;
 
 	private boolean viewSizeInitialized = false;
 
 	private GestureDetector gestureDetector;
 	private RectF pointer;
+	private float dragX = 0, dragY = 0;
 
 	public GameView(Context context) {
 		super(context);
@@ -99,7 +101,9 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_UP) {
 			gameSate = WAITING;
+			draggingOrientation = NONE;
 			pointer = null;
+			draggingTile = null;
 		}
 		gestureDetector.onTouchEvent(event);
 		return true;
@@ -133,24 +137,50 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		super.onDraw(canvas);
 		if (gameSate >= GAME_PREPARED) {
 			drawBoard(canvas);
-			drawTilesAtLaunch(canvas);
+			drawTiles(canvas);
 		}
 	}
 
-	private void drawTilesAtLaunch(Canvas canvas) {
+	private void drawTiles(Canvas canvas) {
 		for (int x = 0; x < column; x++) {
 			for (int y = 0; y < row; y++) {
 				Tile tile = tiles[x][y];
 				if (tile != null) {
-					tile.setPosition(tilesPositions[x][y]);
-					paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
-					textPaint.setColor(Tile.getValueColor(tile.getValue()));
-					canvas.drawRect(tilesPositions[x][y], paint);
-					float horizontalMarginFactor = (tile.getValue() > 9 || tile.getValue() < 0) ? .2F : .33F;
-					canvas.drawText(String.valueOf(tile.getValue()), tile.getPosition().left + (tileSize * horizontalMarginFactor), tile.getPosition().top + tileSize * .66F, textPaint);
+					if (pointer != null) {
+						if (pointer.intersect(tile.getPosition()) && gameSate == WAITING) {
+							draggingTile = tile;
+							gameSate = DRAGGING;
+						}
+					}
+					if (gameSate >= GAME_PREPARED && tile != draggingTile) {
+						tile.setPosition(tilesPositions[x][y]);
+						drawTile(canvas, tile);
+					}
 				}
 			}
 		}
+		if (gameSate == DRAGGING && pointer != null) {
+			if (draggingOrientation == HORIZONTAL) {
+				draggingTile.getPosition().left = dragX - tileSize / 2;
+				draggingTile.getPosition().right = dragX + tileSize / 2;
+			} else {
+				draggingTile.getPosition().top = dragY - tileSize / 2;
+				draggingTile.getPosition().bottom = dragY + tileSize / 2;
+			}
+			drawTile(canvas, draggingTile);
+		}
+	}
+
+	private void drawTile(Canvas canvas, Tile tile) {
+		paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
+		textPaint.setColor(Tile.getValueColor(tile.getValue()));
+		canvas.drawRect(tile.getPosition(), paint);
+		float horizontalMarginFactor = (tile.getValue() > 9 || tile.getValue() < 0) ? .2F : .33F;
+		canvas.drawText(
+				String.valueOf(tile.getValue()),
+				tile.getPosition().left + (tileSize * horizontalMarginFactor),
+				tile.getPosition().top + tileSize * .66F,
+				textPaint);
 	}
 
 	private void drawBoard(Canvas canvas) {
@@ -206,19 +236,15 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		if (gameSate != DRAGGING) {
+		if (draggingOrientation == NONE) {
 			draggingOrientation = Math.abs(distanceX) > Math.abs(distanceY) ? HORIZONTAL : VERTICAL;
 		}
 		if (pointer == null) {
 			pointer = new RectF();
 		}
-		if (draggingOrientation == HORIZONTAL) {
-			pointer.set(e2.getX(), 0, e2.getX(), 0);
-		} else {
-			pointer.set(0, e2.getY(), 0, e2.getY());
-		}
-		Logger.info("pointer = " + pointer);
-		gameSate = DRAGGING;
+		pointer.set(e2.getX(), e2.getY(), e2.getX(), e2.getY());
+		dragX = e2.getX();
+		dragY = e2.getY();
 		invalidate();
 		return true;
 	}
@@ -238,7 +264,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private @interface GameState {
 	}
 
-	@IntDef({HORIZONTAL, VERTICAL})
+	@IntDef({NONE, HORIZONTAL, VERTICAL})
 	@Retention(RetentionPolicy.SOURCE)
 	public @interface OrientationMode {
 	}

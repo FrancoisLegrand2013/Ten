@@ -58,12 +58,12 @@ public class LevelGenerator {
 
 		@Override
 		public int getRow() {
-			return 6;
+			return 4;
 		}
 
 		@Override
 		public int getColumn() {
-			return 6;
+			return 4;
 		}
 
 		@Override
