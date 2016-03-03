@@ -238,14 +238,14 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			}
 		}
 
-		leftBound = getAvailablePosition(Arrays.copyOfRange(horizontalTile, 0, tileXIndex), false) * tileSize;
-		topBound = getAvailablePosition(Arrays.copyOfRange(tiles[tileXIndex], 0, tileYIndex), false) * tileSize;
-		rightBound = getAvailablePosition(Arrays.copyOfRange(horizontalTile, tileXIndex + 1, column), true) * tileSize;
-		bottomBound = getAvailablePosition(Arrays.copyOfRange(tiles[tileXIndex], tileYIndex + 1, row), true) * tileSize;
+		leftBound = getAvailablePositionsCount(Arrays.copyOfRange(horizontalTile, 0, tileXIndex), false) * tileSize;
+		topBound = getAvailablePositionsCount(Arrays.copyOfRange(tiles[tileXIndex], 0, tileYIndex), false) * tileSize;
+		rightBound = getAvailablePositionsCount(Arrays.copyOfRange(horizontalTile, tileXIndex + 1, column), true) * tileSize;
+		bottomBound = getAvailablePositionsCount(Arrays.copyOfRange(tiles[tileXIndex], tileYIndex + 1, row), true) * tileSize;
 		boundsCalculated = true;
 	}
 
-	private int getAvailablePosition(Tile[] neighbour, boolean ascendant) {
+	private int getAvailablePositionsCount(Tile[] neighbour, boolean ascendant) {
 		int distanceFactor = neighbour.length;
 		if (ascendant) {
 			for (int i = 0; i < neighbour.length; i++) {
