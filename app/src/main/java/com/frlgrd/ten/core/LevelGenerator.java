@@ -48,7 +48,7 @@ public class LevelGenerator {
 		Tile[][] tiles = new Tile[level.getColumn()][level.getRow()];
 		for (int x = 0; x < level.getColumn(); x++) {
 			for (int y = 0; y < level.getRow(); y++) {
-
+				// TODO
 			}
 		}
 		return tiles;
@@ -58,12 +58,12 @@ public class LevelGenerator {
 
 		@Override
 		public int getRow() {
-			return 4;
+			return 5;
 		}
 
 		@Override
 		public int getColumn() {
-			return 4;
+			return 5;
 		}
 
 		@Override

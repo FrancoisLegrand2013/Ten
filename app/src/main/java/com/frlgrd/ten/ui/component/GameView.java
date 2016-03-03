@@ -6,6 +6,7 @@ import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.os.Build;
 import android.support.annotation.IntDef;
@@ -100,6 +101,14 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (event.getAction() == MotionEvent.ACTION_UP) {
+			if (draggingTile != null) {
+				Tile tile = getTargetTile(new PointF(event.getX(), event.getY()));
+				if (tile != null && draggingTile.canMergeWith(tile)) {
+					mergeDraggingTileWith(tile);
+				} else {
+					invalidate();
+				}
+			}
 			gameSate = WAITING;
 			draggingOrientation = NONE;
 			pointer = null;
@@ -107,6 +116,42 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 		gestureDetector.onTouchEvent(event);
 		return true;
+	}
+
+	private void mergeDraggingTileWith(Tile target) {
+		if (draggingTile.canMergeWith(target)) {
+			for (int x = 0; x < column; x++) {
+				for (int y = 0; y < row; y++) {
+					Tile tile = tiles[x][y];
+					if (tile != null) {
+						if (tile == draggingTile) {
+							tiles[x][y] = null;
+						} else if (tile == target) {
+							tiles[x][y].setValue(target.getValue() + draggingTile.getValue());
+						}
+					}
+				}
+			}
+
+			invalidate();
+		}
+	}
+
+	private Tile getTargetTile(@NonNull PointF point) {
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				Tile tile = tiles[x][y];
+				if (tile != null) {
+					RectF rect = tile.getPosition();
+					if (point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom) {
+						if (draggingTile != null && tile != draggingTile) {
+							return tile;
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	@Override
@@ -147,7 +192,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 				Tile tile = tiles[x][y];
 				if (tile != null) {
 					if (pointer != null) {
-						if (pointer.intersect(tile.getPosition()) && gameSate == WAITING) {
+						if (pointer.intersect(tile.getPosition()) && gameSate == WAITING && tile.canBeDragged()) {
 							draggingTile = tile;
 							gameSate = DRAGGING;
 						}

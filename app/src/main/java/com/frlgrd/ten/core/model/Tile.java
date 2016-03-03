@@ -34,6 +34,23 @@ public class Tile {
 		}
 	}
 
+	public boolean canMergeWith(Tile tile) {
+		if (tile == null) {
+			return false;
+		}
+		if (tile == this) {
+			return false;
+		}
+		if (getValue() + tile.getValue() <= 10) {
+			return true;
+		}
+		return false;
+	}
+
+	public boolean canBeDragged() {
+		return getValue() != 10;
+	}
+
 	public RectF getPosition() {
 		return position;
 	}
