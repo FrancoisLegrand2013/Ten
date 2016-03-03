@@ -17,7 +17,7 @@ public class Tile {
 		if (value < 0) {
 			return Color.WHITE;
 		} else if (value == 0) {
-			return Color.DKGRAY;
+			return Color.RED;
 		} else {
 			int[] colors = context.getResources().getIntArray(R.array.tiles_color);
 			return colors[value % colors.length];
@@ -41,6 +41,12 @@ public class Tile {
 		if (tile == this) {
 			return false;
 		}
+		if (getPosition().left != tile.getPosition().left && getPosition().top != tile.getPosition().top) {
+			return false;
+		}
+		if (getValue() == 0 || tile.getValue() == 0) {
+			return false;
+		}
 		if (getValue() + tile.getValue() <= 10) {
 			return true;
 		}
@@ -48,7 +54,7 @@ public class Tile {
 	}
 
 	public boolean canBeDragged() {
-		return getValue() != 10;
+		return getValue() != 10 && getValue() != 0;
 	}
 
 	public RectF getPosition() {

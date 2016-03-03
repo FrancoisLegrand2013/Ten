@@ -27,20 +27,27 @@ import java.lang.annotation.RetentionPolicy;
 
 public class GameView extends FrameLayout implements GestureDetector.OnGestureListener {
 
+	private static final int NONE = -1;
+
 	private static final int START = 0;
 	private static final int GAME_PREPARED = 1;
 	private static final int WAITING = 2;
 	private static final int DRAGGING = 3;
 
-	private static final int NONE = -1;
 	private static final int HORIZONTAL = 0;
 	private static final int VERTICAL = 1;
 
-	@OrientationMode
-	private int draggingOrientation;
+	private static final int DIRECTION_LEFT = 0;
+	private static final int DIRECTION_TOP = 1;
+	private static final int DIRECTION_RIGHT = 2;
+	private static final int DIRECTION_BOTTOM = 3;
+
 	@GameState
 	private int gameSate = START;
-
+	@Orientation
+	private int draggingOrientation;
+	@Direction
+	private int draggingDirection;
 	private int row = 0;
 	private int column = 0;
 	private int tileColor1 = 0;
@@ -132,7 +139,6 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 					}
 				}
 			}
-
 			invalidate();
 		}
 	}
@@ -216,6 +222,13 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
+	private boolean isStillInGameBoard() {
+		return draggingTile.getPosition().left > tilesPositions[0][0].left
+				&& draggingTile.getPosition().right < tilesPositions[column - 1][0].right
+				&& draggingTile.getPosition().top > tilesPositions[0][0].top
+				&& draggingTile.getPosition().bottom < tilesPositions[0][row - 1].bottom;
+	}
+
 	private void drawTile(Canvas canvas, Tile tile) {
 		paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
 		textPaint.setColor(Tile.getValueColor(tile.getValue()));
@@ -284,6 +297,19 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		if (draggingOrientation == NONE) {
 			draggingOrientation = Math.abs(distanceX) > Math.abs(distanceY) ? HORIZONTAL : VERTICAL;
 		}
+		if (draggingOrientation == HORIZONTAL) {
+			if (distanceX > 0) {
+				draggingDirection = DIRECTION_RIGHT;
+			} else {
+				draggingDirection = DIRECTION_LEFT;
+			}
+		} else {
+			if (distanceY > 0) {
+				draggingDirection = DIRECTION_BOTTOM;
+			} else {
+				draggingDirection = DIRECTION_TOP;
+			}
+		}
 		if (pointer == null) {
 			pointer = new RectF();
 		}
@@ -301,7 +327,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-		return false;
+		return true;
 	}
 
 	@IntDef({START, GAME_PREPARED, WAITING, DRAGGING})
@@ -311,6 +337,11 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@IntDef({NONE, HORIZONTAL, VERTICAL})
 	@Retention(RetentionPolicy.SOURCE)
-	public @interface OrientationMode {
+	public @interface Orientation {
+	}
+
+	@IntDef({NONE, DIRECTION_LEFT, DIRECTION_TOP, DIRECTION_RIGHT, DIRECTION_BOTTOM})
+	@Retention(RetentionPolicy.SOURCE)
+	public @interface Direction {
 	}
 }
