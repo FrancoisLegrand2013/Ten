@@ -27,7 +27,7 @@ public class LevelGenerator {
 		float average;
 		do {
 			sum = 0;
-			cpt = 1;
+			cpt = 0;
 			average = 0;
 			for (int x = 0; x < level.getColumn(); x++) {
 				for (int y = 0; y < level.getRow(); y++) {
@@ -40,7 +40,7 @@ public class LevelGenerator {
 					}
 				}
 			}
-		} while (sum % 10 != 0 && average > 5);
+		} while (sum % 10 != 0 || average > 4);
 		return tiles;
 	}
 
