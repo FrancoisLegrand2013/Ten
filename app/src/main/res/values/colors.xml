@@ -4,17 +4,25 @@
 	<color name="colorPrimaryDark">#303F9F</color>
 	<color name="colorAccent">#FF4081</color>
 
-	<color name="tileColor1">#2e3032</color>
-	<color name="tileColor2">#262729</color>
+	<color name="tileColor1">#292929</color>
+	<color name="tileColor2">#212121</color>
 
 	<array name="tiles_color">
-		<item>#e62a24</item>
-		<item>#7d0093</item>
-		<item>#2f36a2</item>
-		<item>#008fe9</item>
-		<item>#058271</item>
-		<item>#f3e119</item>
-		<item>#f38200</item>
-		<item>#634237</item>
+		<item>#EF5350</item>
+		<!--<item>#EC407A</item>-->
+		<item>#AB47BC</item>
+		<!--<item>#7E57C2</item>-->
+		<item>#5C6BC0</item>
+		<!--<item>#42A5F5</item>-->
+		<item>#29B6F6</item>
+		<!--<item>#26C6DA</item>-->
+		<item>#26A69A</item>
+		<!--<item>#66BB6A</item>-->
+		<item>#9CCC65</item>
+		<!--<item>#D4E157</item>-->
+		<item>#FFEE58</item>
+		<!--<item>#FFCA28</item>-->
+		<item>#FFA726</item>
+		<!--<item>#FF7043</item>-->
 	</array>
 </resources>
