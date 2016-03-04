@@ -20,6 +20,7 @@ import android.widget.RelativeLayout;
 import com.frlgrd.ten.R;
 import com.frlgrd.ten.core.Level;
 import com.frlgrd.ten.core.LevelGenerator;
+import com.frlgrd.ten.core.Logger;
 import com.frlgrd.ten.core.model.Tile;
 
 import java.lang.annotation.Retention;
@@ -59,16 +60,16 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	private Tile[][] tiles;
 	private RectF[][] tilesPositions;
-	private Tile draggingTile;
 
 	private boolean viewSizeInitialized = false;
 
 	private GestureDetector gestureDetector;
+	private Tile draggingTile;
 	private RectF pointer;
 	private float dragX = 0, dragY = 0;
+	private boolean overScrolled = false;
 
 	private float leftBound = 0, topBound = 0, rightBound = 0, bottomBound = 0;
-	private boolean boundsCalculated = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -112,7 +113,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		if (event.getAction() == MotionEvent.ACTION_UP) {
 			if (draggingTile != null) {
 				Tile tile = getTargetTile(new PointF(event.getX(), event.getY()));
-				if (tile != null && draggingTile.canMergeWith(tile)) {
+				if (tile != null && draggingTile.canMergeWith(tile) && !overScrolled) {
 					mergeDraggingTileWith(tile);
 				} else {
 					invalidate();
@@ -120,9 +121,9 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			}
 			gameSate = WAITING;
 			draggingOrientation = NONE;
-			boundsCalculated = false;
 			pointer = null;
 			draggingTile = null;
+			overScrolled = false;
 		}
 		gestureDetector.onTouchEvent(event);
 		return true;
@@ -194,7 +195,8 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 				}
 			}
 		});
-		if (gameSate == DRAGGING && pointer != null) {
+		if (gameSate == DRAGGING) {
+			overScrolled = !canContinueDragging(draggingTile.getPosition());
 			if (draggingOrientation == HORIZONTAL) {
 				draggingTile.getPosition().left = dragX - tileSize / 2;
 				draggingTile.getPosition().right = dragX + tileSize / 2;
@@ -230,27 +232,52 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		topBound = getAvailablePositionsCount(Arrays.copyOfRange(tiles[tileXIndex], 0, tileYIndex), false) * tileSize;
 		rightBound = getAvailablePositionsCount(Arrays.copyOfRange(horizontalTile, tileXIndex + 1, column), true) * tileSize;
 		bottomBound = getAvailablePositionsCount(Arrays.copyOfRange(tiles[tileXIndex], tileYIndex + 1, row), true) * tileSize;
-		boundsCalculated = true;
 	}
 
-	private int getAvailablePositionsCount(Tile[] neighbour, boolean ascendant) {
-		int distanceFactor = neighbour.length;
+	/**
+	 * @param neighbours Tile[] to the left/top/right/bottom of origin dragging position
+	 * @param ascendant  loop way
+	 * @return Move count between origin dragging position  and his destination
+	 */
+	private int getAvailablePositionsCount(Tile[] neighbours, boolean ascendant) {
 		if (ascendant) {
-			for (int i = 0; i < neighbour.length; i++) {
-				if (neighbour[i] != null && neighbour[i].canBeDragged()) {
-					distanceFactor = i;
-					break;
+			for (int i = 0; i < neighbours.length; i++) {
+				if (neighbours[i] != null) {
+					if (neighbours[i].canBeDragged()) {
+						return i + 1;
+					} else {
+						return i;
+					}
 				}
 			}
 		} else {
-			for (int i = neighbour.length - 1; i >= 0; i--) {
-				if (neighbour[i] != null && neighbour[i].canBeDragged()) {
-					distanceFactor = i - neighbour.length + 1;
-					break;
+			for (int i = neighbours.length - 1; i >= 0; i--) {
+				if (neighbours[i] != null) {
+					if (neighbours[i].canBeDragged()) {
+						return neighbours.length - i;
+					} else {
+						return neighbours.length - i - 1;
+					}
 				}
 			}
 		}
-		return Math.abs(distanceFactor);
+		return neighbours.length;
+	}
+
+	private boolean canContinueDragging(RectF tilePosition) {
+		switch (draggingDirection) {
+			case DIRECTION_LEFT:
+				return tilePosition.left - dragX + tileSize / 2 < leftBound;
+			case DIRECTION_TOP:
+				return tilePosition.top - dragY + tileSize / 2 < topBound;
+			case DIRECTION_RIGHT:
+				return dragX + tileSize / 2 - tilePosition.right < rightBound;
+			case DIRECTION_BOTTOM:
+				return dragY + tileSize / 2 - tilePosition.bottom < bottomBound;
+			default:
+				Logger.error("Shouldn't happened");
+				return false;
+		}
 	}
 
 	private void mergeDraggingTileWith(Tile target) {
@@ -322,13 +349,13 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			draggingOrientation = Math.abs(distanceX) > Math.abs(distanceY) ? HORIZONTAL : VERTICAL;
 		}
 		if (draggingOrientation == HORIZONTAL) {
-			if (distanceX > 0) {
+			if (distanceX < 0) {
 				draggingDirection = DIRECTION_RIGHT;
 			} else {
 				draggingDirection = DIRECTION_LEFT;
 			}
 		} else {
-			if (distanceY > 0) {
+			if (distanceY < 0) {
 				draggingDirection = DIRECTION_BOTTOM;
 			} else {
 				draggingDirection = DIRECTION_TOP;
@@ -338,8 +365,10 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			pointer = new RectF();
 		}
 		pointer.set(e2.getX(), e2.getY(), e2.getX(), e2.getY());
-		dragX = e2.getX();
-		dragY = e2.getY();
+		if (!overScrolled) {
+			dragX = e2.getX();
+			dragY = e2.getY();
+		}
 		invalidate();
 		return true;
 	}
