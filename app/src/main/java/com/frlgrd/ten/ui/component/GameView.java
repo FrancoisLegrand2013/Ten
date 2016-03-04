@@ -30,10 +30,8 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	private static final int NONE = -1;
 
-	private static final int START = 0;
-	private static final int GAME_PREPARED = 1;
-	private static final int WAITING = 2;
-	private static final int DRAGGING = 3;
+	private static final int WAITING = 0;
+	private static final int DRAGGING = 1;
 
 	private static final int HORIZONTAL = 0;
 	private static final int VERTICAL = 1;
@@ -44,7 +42,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private static final int DIRECTION_BOTTOM = 3;
 
 	@GameState
-	private int gameSate = START;
+	private int gameSate = WAITING;
 	@Orientation
 	private int draggingOrientation;
 	@Direction
@@ -166,7 +164,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		if (gameSate == GAME_PREPARED) {
+		if (gameSate == WAITING) {
 			int maxHeight = getMeasuredHeight() / row;
 			int maxWidth = getMeasuredWidth() / column;
 			if (maxHeight < maxWidth) {
@@ -189,7 +187,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-		if (gameSate >= GAME_PREPARED) {
+		if (gameSate >= WAITING) {
 			drawBoard(canvas);
 			drawTiles(canvas);
 		}
@@ -200,13 +198,15 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			Tile tile = tiles[x][y];
 			if (tile != null) {
 				if (pointer != null) {
-					if (pointer.intersect(tile.getPosition()) && gameSate == WAITING && tile.canBeDragged()) {
-						draggingTile = tile;
-						calculateDraggingTileBounds(x, y);
-						gameSate = DRAGGING;
+					if (pointer.intersect(tile.getPosition())) {
+						if (gameSate == WAITING && tile.canBeDragged()) {
+							draggingTile = tile;
+							calculateDraggingTileBounds(x, y);
+							gameSate = DRAGGING;
+						}
 					}
 				}
-				if (gameSate >= GAME_PREPARED && tile != draggingTile) {
+				if (gameSate >= WAITING && tile != draggingTile) {
 					tile.setPosition(tilesPositions[x][y]);
 					drawTile(canvas, tile);
 				}
@@ -297,7 +297,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			tiles = LevelGenerator.generate(tilesPositions, level);
 		}
 
-		gameSate = GAME_PREPARED;
+		gameSate = WAITING;
 		invalidate();
 	}
 
@@ -318,7 +318,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 
 	@Override
 	public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-		if (draggingOrientation == NONE) {
+		if (gameSate != DRAGGING) {
 			draggingOrientation = Math.abs(distanceX) > Math.abs(distanceY) ? HORIZONTAL : VERTICAL;
 		}
 		if (draggingOrientation == HORIZONTAL) {
@@ -362,7 +362,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
-	@IntDef({START, GAME_PREPARED, WAITING, DRAGGING})
+	@IntDef({WAITING, DRAGGING})
 	@Retention(RetentionPolicy.SOURCE)
 	private @interface GameState {
 	}
