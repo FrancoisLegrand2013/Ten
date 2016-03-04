@@ -208,7 +208,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
-	private void drawTile(Canvas canvas, Tile tile) {
+	private void drawTile(Canvas canvas, @NonNull Tile tile) {
 		paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
 		textPaint.setColor(Tile.getValueColor(tile.getValue()));
 		canvas.drawRect(tile.getPosition(), paint);
@@ -239,7 +239,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	 * @param ascendant  loop way
 	 * @return Move count between origin dragging position  and his destination
 	 */
-	private int getAvailablePositionsCount(Tile[] neighbours, boolean ascendant) {
+	private int getAvailablePositionsCount(@NonNull Tile[] neighbours, boolean ascendant) {
 		if (ascendant) {
 			for (int i = 0; i < neighbours.length; i++) {
 				if (neighbours[i] != null) {
@@ -264,7 +264,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		return neighbours.length;
 	}
 
-	private boolean canContinueDragging(RectF tilePosition) {
+	private boolean canContinueDragging(@NonNull RectF tilePosition) {
 		switch (draggingDirection) {
 			case DIRECTION_LEFT:
 				return tilePosition.left - dragX + tileSize / 2 < leftBound;
@@ -280,7 +280,7 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
-	private void mergeDraggingTileWith(Tile target) {
+	private void mergeDraggingTileWith(@NonNull Tile target) {
 		if (draggingTile.canMergeWith(target)) {
 			loop((x, y) -> {
 				Tile tile = tiles[x][y];
