@@ -113,7 +113,12 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		if (event.getAction() == MotionEvent.ACTION_UP) {
 			if (draggingTile != null) {
 				Tile tile = getTargetTile(new PointF(event.getX(), event.getY()));
-				if (tile != null && draggingTile.canMergeWith(tile) && !overScrolled) {
+				RectF pointerRectF = new RectF(pointer);
+				pointerRectF.left -= tileSize / 2;
+				pointerRectF.top -= tileSize / 2;
+				pointerRectF.right += tileSize / 2;
+				pointerRectF.bottom += tileSize / 2;
+				if (tile != null && draggingTile.canMergeWith(tile) && canContinueDragging(pointerRectF)) {
 					mergeDraggingTileWith(tile);
 				} else {
 					invalidate();
@@ -267,13 +272,13 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 	private boolean canContinueDragging(@NonNull RectF tilePosition) {
 		switch (draggingDirection) {
 			case DIRECTION_LEFT:
-				return tilePosition.left - dragX + tileSize / 2 < leftBound;
+				return Math.abs(tilePosition.left - dragX + tileSize / 2) < leftBound;
 			case DIRECTION_TOP:
-				return tilePosition.top - dragY + tileSize / 2 < topBound;
+				return Math.abs(tilePosition.top - dragY + tileSize / 2) < topBound;
 			case DIRECTION_RIGHT:
-				return dragX + tileSize / 2 - tilePosition.right < rightBound;
+				return Math.abs(dragX + tileSize / 2 - tilePosition.right) < rightBound;
 			case DIRECTION_BOTTOM:
-				return dragY + tileSize / 2 - tilePosition.bottom < bottomBound;
+				return Math.abs(dragY + tileSize / 2 - tilePosition.bottom) < bottomBound;
 			default:
 				Logger.error("Shouldn't happened");
 				return false;
