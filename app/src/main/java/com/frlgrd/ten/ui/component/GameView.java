@@ -128,39 +128,6 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		return true;
 	}
 
-	private void mergeDraggingTileWith(Tile target) {
-		if (draggingTile.canMergeWith(target)) {
-			loop((x, y) -> {
-				Tile tile = tiles[x][y];
-				if (tile != null) {
-					if (tile == draggingTile) {
-						tiles[x][y] = null;
-					} else if (tile == target) {
-						tiles[x][y].setValue(target.getValue() + draggingTile.getValue());
-					}
-				}
-			});
-			invalidate();
-		}
-	}
-
-	private Tile getTargetTile(@NonNull PointF point) {
-		for (int x = 0; x < column; x++) {
-			for (int y = 0; y < row; y++) {
-				Tile tile = tiles[x][y];
-				if (tile != null) {
-					RectF rect = tile.getPosition();
-					if (point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom) {
-						if (draggingTile != null && tile != draggingTile) {
-							return tile;
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -179,11 +146,6 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		}
 	}
 
-	private void initViewSize() {
-		setLayoutParams(new RelativeLayout.LayoutParams(column * tileSize, row * tileSize));
-		viewSizeInitialized = true;
-	}
-
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
@@ -191,6 +153,26 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			drawBoard(canvas);
 			drawTiles(canvas);
 		}
+	}
+
+	private void initViewSize() {
+		setLayoutParams(new RelativeLayout.LayoutParams(column * tileSize, row * tileSize));
+		viewSizeInitialized = true;
+	}
+
+	private void drawBoard(Canvas canvas) {
+		int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
+		int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
+		loop((x, y) -> {
+			int left = x * tileSize + horizontalOffset;
+			int top = y * tileSize + verticalOffset;
+			int right = (x + 1) * tileSize + horizontalOffset;
+			int bottom = (y + 1) * tileSize + verticalOffset;
+			baseTileRect.set(left, top, right, bottom);
+			paint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
+			canvas.drawRect(baseTileRect, paint);
+			tilesPositions[x][y].set(left, top, right, bottom);
+		});
 	}
 
 	private void drawTiles(Canvas canvas) {
@@ -222,6 +204,18 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 			}
 			drawTile(canvas, draggingTile);
 		}
+	}
+
+	private void drawTile(Canvas canvas, Tile tile) {
+		paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
+		textPaint.setColor(Tile.getValueColor(tile.getValue()));
+		canvas.drawRect(tile.getPosition(), paint);
+		float horizontalMarginFactor = (tile.getValue() > 9 || tile.getValue() < 0) ? .2F : .33F;
+		canvas.drawText(
+				String.valueOf(tile.getValue()),
+				tile.getPosition().left + (tileSize * horizontalMarginFactor),
+				tile.getPosition().top + tileSize * .66F,
+				textPaint);
 	}
 
 	private void calculateDraggingTileBounds(int tileXIndex, int tileYIndex) {
@@ -259,31 +253,37 @@ public class GameView extends FrameLayout implements GestureDetector.OnGestureLi
 		return Math.abs(distanceFactor);
 	}
 
-	private void drawTile(Canvas canvas, Tile tile) {
-		paint.setColor(Tile.getTilesColor(getContext(), tile.getValue()));
-		textPaint.setColor(Tile.getValueColor(tile.getValue()));
-		canvas.drawRect(tile.getPosition(), paint);
-		float horizontalMarginFactor = (tile.getValue() > 9 || tile.getValue() < 0) ? .2F : .33F;
-		canvas.drawText(
-				String.valueOf(tile.getValue()),
-				tile.getPosition().left + (tileSize * horizontalMarginFactor),
-				tile.getPosition().top + tileSize * .66F,
-				textPaint);
+	private void mergeDraggingTileWith(Tile target) {
+		if (draggingTile.canMergeWith(target)) {
+			loop((x, y) -> {
+				Tile tile = tiles[x][y];
+				if (tile != null) {
+					if (tile == draggingTile) {
+						tiles[x][y] = null;
+					} else if (tile == target) {
+						tiles[x][y].setValue(target.getValue() + draggingTile.getValue());
+					}
+				}
+			});
+			invalidate();
+		}
 	}
 
-	private void drawBoard(Canvas canvas) {
-		int horizontalOffset = (getMeasuredWidth() - column * tileSize) / 2;
-		int verticalOffset = (getMeasuredHeight() - row * tileSize) / 2;
-		loop((x, y) -> {
-			int left = x * tileSize + horizontalOffset;
-			int top = y * tileSize + verticalOffset;
-			int right = (x + 1) * tileSize + horizontalOffset;
-			int bottom = (y + 1) * tileSize + verticalOffset;
-			baseTileRect.set(left, top, right, bottom);
-			paint.setColor((x + y) % 2 == 0 ? tileColor1 : tileColor2);
-			canvas.drawRect(baseTileRect, paint);
-			tilesPositions[x][y].set(left, top, right, bottom);
-		});
+	private Tile getTargetTile(@NonNull PointF point) {
+		for (int x = 0; x < column; x++) {
+			for (int y = 0; y < row; y++) {
+				Tile tile = tiles[x][y];
+				if (tile != null) {
+					RectF rect = tile.getPosition();
+					if (point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom) {
+						if (draggingTile != null && tile != draggingTile) {
+							return tile;
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	public void start(@NonNull Level level) {
